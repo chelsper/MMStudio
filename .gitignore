@@ -3,3 +3,9 @@
 .vscode/
 *.swp
 *.swo
+.env
+.env.*
+.vercel/
+node_modules/
+dist/
+build/
