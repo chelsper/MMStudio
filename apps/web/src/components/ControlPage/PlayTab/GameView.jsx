@@ -119,7 +119,7 @@ export function GameView({
         votingOpen={votingOpen}
       />
 
-      {votingOpen && (
+      {votingOpen && character.canVote !== false && (
         <VotingSection
           allCharacters={allCharacters}
           currentCharacterName={character.name}
@@ -128,6 +128,18 @@ export function GameView({
           gmSubmittingVote={gmSubmittingVote}
           handleGmVote={handleGmVote}
         />
+      )}
+
+      {votingOpen && character.canVote === false && (
+        <div className="mb-8 bg-slate-800/60 border border-slate-700 rounded-xl p-6 text-center">
+          <p className="text-slate-200 font-semibold mb-2">
+            Theo does not vote during the accusation phase.
+          </p>
+          <p className="text-slate-400 text-sm">
+            Stay in observer mode and let the surviving students make the final
+            judgment.
+          </p>
+        </div>
       )}
     </div>
   );

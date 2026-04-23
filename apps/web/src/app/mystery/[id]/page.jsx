@@ -18,6 +18,8 @@ import { AssignModal } from "@/components/MysteryPage/AssignModal";
 import { ShareLinkModal } from "@/components/MysteryPage/ShareLinkModal";
 import { LoadingState } from "@/components/MysteryPage/LoadingState";
 import { ErrorState } from "@/components/MysteryPage/ErrorState";
+import { PrivateGameSettings } from "@/components/MysteryPage/PrivateGameSettings";
+import { HostGuideSection } from "@/components/MysteryPage/HostGuideSection";
 
 export default function MysteryPage({ params }) {
   const { mystery, assignments, loading, error, refetch } = useMysteryData(
@@ -32,7 +34,9 @@ export default function MysteryPage({ params }) {
     characters: true,
     clues: false,
     timeline: false,
+    hostGuide: true,
   });
+  const [updatingBonusCharacter, setUpdatingBonusCharacter] = useState(false);
 
   const {
     assignCharacter,
@@ -57,6 +61,32 @@ export default function MysteryPage({ params }) {
 
   const handleAssign = async () => {
     await assignCharacter(assignModal.characterName);
+  };
+
+  const handleToggleBonusCharacter = async (includeBonusCharacter) => {
+    setUpdatingBonusCharacter(true);
+    try {
+      const response = await fetch(`/api/mysteries/${params.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "toggleBonusCharacter",
+          includeBonusCharacter,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to update roster");
+      }
+
+      refetch();
+    } catch (err) {
+      console.error("Error updating bonus character:", err);
+      alert(err.message);
+    } finally {
+      setUpdatingBonusCharacter(false);
+    }
   };
 
   const handleViewLink = (characterName, assignment) => {
@@ -106,6 +136,13 @@ export default function MysteryPage({ params }) {
           allAssigned={allAssigned}
         />
 
+        <PrivateGameSettings
+          config={mystery.config}
+          assignments={assignments}
+          updatingBonusCharacter={updatingBonusCharacter}
+          onToggleBonusCharacter={handleToggleBonusCharacter}
+        />
+
         <PremiseSection premise={mysteryData.premise} />
 
         <VictimSection victim={mysteryData.victim} />
@@ -138,6 +175,12 @@ export default function MysteryPage({ params }) {
           showSolution={showSolution}
           expanded={expandedSections.clues}
           onToggle={() => toggleSection("clues")}
+        />
+
+        <HostGuideSection
+          hostGuide={mysteryData.hostGuide}
+          expanded={expandedSections.hostGuide}
+          onToggle={() => toggleSection("hostGuide")}
         />
 
         <SolutionSection

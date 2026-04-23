@@ -1,4 +1,5 @@
 import sql from "@/app/api/utils/sql";
+import { resolveMysteryData } from "@/app/api/utils/resolveMysteryData";
 
 // Get player's game view
 export async function GET(request, { params }) {
@@ -22,7 +23,7 @@ export async function GET(request, { params }) {
     }
 
     const row = rows[0];
-    const mysteryData = row.mystery_data;
+    const mysteryData = resolveMysteryData(row.mystery_data, row.config);
     const character = mysteryData.characters.find(
       (c) => c.name === row.character_name,
     );
@@ -70,9 +71,16 @@ export async function GET(request, { params }) {
       character: {
         name: character.name,
         role: character.role,
+        vibe: character.packet?.vibe || null,
         personality: character.personality,
         secret: character.secret,
         relationshipToVictim: character.relationshipToVictim,
+        publicBio: character.packet?.publicBio || null,
+        willingToShare: character.packet?.willingToShare || null,
+        roleplayNotes: character.packet?.roleplayNotes || [],
+        suspicionLevel: character.packet?.suspicionLevel || null,
+        isVictim: character.isVictim === true,
+        canVote: character.canBeAccused !== false,
       },
       isKiller: row.is_killer,
       victim: mysteryData.victim,
@@ -80,10 +88,11 @@ export async function GET(request, { params }) {
       totalClues: mysteryData.clues.length,
       cluesRevealed,
       visibleClues,
-      allCharacters: mysteryData.characters.map((c) => ({
+      allCharacters: (mysteryData.accusationTargets || mysteryData.characters).map((c) => ({
         name: c.name,
         role: c.role,
       })),
+      hostGuide: mysteryData.hostGuide || null,
       votingOpen,
       myVote: voteRows.length > 0 ? voteRows[0].voted_for : null,
     });

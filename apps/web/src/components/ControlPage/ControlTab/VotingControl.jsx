@@ -9,6 +9,8 @@ export function VotingControl({
   handleToggleVoting,
   mysteryData,
 }) {
+  const voteTargets = mysteryData.accusationTargets || mysteryData.characters;
+
   return (
     <div className="bg-gradient-to-br from-amber-900/30 to-orange-900/20 backdrop-blur-sm border-2 border-amber-500/40 rounded-xl p-8 mb-6 shadow-xl">
       <h2 className="text-3xl font-bold text-white mb-6 flex items-center gap-3 justify-center">
@@ -63,7 +65,7 @@ export function VotingControl({
           </div>
 
           <div className="space-y-3">
-            {mysteryData.characters.map((char) => {
+            {voteTargets.map((char) => {
               const count = voteCounts[char.name] || 0;
               const maxVotes = Math.max(...Object.values(voteCounts), 1);
               const pct =

@@ -1,4 +1,5 @@
 import sql from "@/app/api/utils/sql";
+import { resolveMysteryData } from "@/app/api/utils/resolveMysteryData";
 
 // Reveal the next clue globally for all players
 export async function POST(request, { params }) {
@@ -19,7 +20,8 @@ export async function POST(request, { params }) {
     }
 
     const row = rows[0];
-    const totalClues = row.mystery_data.clues.length;
+    const mysteryData = resolveMysteryData(row.mystery_data, {});
+    const totalClues = mysteryData.clues.length;
     const currentRevealed = row.global_clues_revealed;
 
     if (currentRevealed >= totalClues) {

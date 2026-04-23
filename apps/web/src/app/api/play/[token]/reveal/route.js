@@ -1,4 +1,5 @@
 import sql from "@/app/api/utils/sql";
+import { resolveMysteryData } from "@/app/api/utils/resolveMysteryData";
 
 // Reveal the next clue for a player
 export async function POST(request, { params }) {
@@ -7,7 +8,7 @@ export async function POST(request, { params }) {
 
     // Get current state
     const rows = await sql(
-      `SELECT ca.id, ca.clues_revealed, m.mystery_data
+      `SELECT ca.id, ca.clues_revealed, m.mystery_data, m.config
        FROM character_assignments ca
        JOIN mysteries m ON m.id = ca.mystery_id
        WHERE ca.token = $1`,
@@ -22,7 +23,8 @@ export async function POST(request, { params }) {
     }
 
     const row = rows[0];
-    const totalClues = row.mystery_data.clues.length;
+    const mysteryData = resolveMysteryData(row.mystery_data, row.config);
+    const totalClues = mysteryData.clues.length;
     const currentRevealed = row.clues_revealed;
 
     if (currentRevealed >= totalClues) {

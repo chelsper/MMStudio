@@ -1,4 +1,5 @@
 import sql from "@/app/api/utils/sql";
+import { resolveMysteryData } from "@/app/api/utils/resolveMysteryData";
 
 function generateToken() {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -41,7 +42,10 @@ export async function POST(request, { params }) {
       );
     }
 
-    const mysteryData = mysteryRows[0].mystery_data;
+    const mysteryData = resolveMysteryData(
+      mysteryRows[0].mystery_data,
+      mysteryRows[0].config,
+    );
     const config = mysteryRows[0].config;
     const character = mysteryData.characters.find(
       (c) => c.name === characterName,
@@ -53,6 +57,8 @@ export async function POST(request, { params }) {
         { status: 404 },
       );
     }
+
+    const authoredSecrets = character.packet?.privateClues;
 
     // Get existing assignments to see what secrets other players already have
     const existingAssignments = await sql(
@@ -105,7 +111,17 @@ export async function POST(request, { params }) {
 - Make the red herrings very convincing and the real clues subtle`;
     }
 
-    const prompt = `You are writing personal secrets for a murder mystery party game. The tone is ${tone}.
+    let secretsData;
+
+    if (Array.isArray(authoredSecrets) && authoredSecrets.length > 0) {
+      secretsData = {
+        secrets: authoredSecrets.map((secret) => ({
+          clueIndex: secret.clueIndex,
+          secretInfo: secret.secretInfo,
+        })),
+      };
+    } else {
+      const prompt = `You are writing personal secrets for a murder mystery party game. The tone is ${tone}.
 
 STORY CONTEXT:
 Setting: ${config.setting || "unknown"}
@@ -138,49 +154,53 @@ ${character.isMurderer ? `5. Since this character IS the killer: their secrets s
 7. Keep each secret to 1-3 sentences. Make them specific and vivid, not generic.
 ${existingSecretsContext}`;
 
-    const gptResponse = await fetch("/integrations/chat-gpt/conversationgpt4", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a talented mystery writer creating personal secrets for characters in a murder mystery party game. Each secret should feel natural, specific, and like a real piece of a larger puzzle. Write in a way that sounds like real people remembering real events — not like reading from a script.",
-          },
-          { role: "user", content: prompt },
-        ],
-        json_schema: {
-          name: "character_secrets",
-          schema: {
-            type: "object",
-            properties: {
-              secrets: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    clueIndex: { type: "integer" },
-                    secretInfo: { type: "string" },
+      const gptResponse = await fetch(
+        "/integrations/chat-gpt/conversationgpt4",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: [
+              {
+                role: "system",
+                content:
+                  "You are a talented mystery writer creating personal secrets for characters in a murder mystery party game. Each secret should feel natural, specific, and like a real piece of a larger puzzle. Write in a way that sounds like real people remembering real events — not like reading from a script.",
+              },
+              { role: "user", content: prompt },
+            ],
+            json_schema: {
+              name: "character_secrets",
+              schema: {
+                type: "object",
+                properties: {
+                  secrets: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        clueIndex: { type: "integer" },
+                        secretInfo: { type: "string" },
+                      },
+                      required: ["clueIndex", "secretInfo"],
+                      additionalProperties: false,
+                    },
                   },
-                  required: ["clueIndex", "secretInfo"],
-                  additionalProperties: false,
                 },
+                required: ["secrets"],
+                additionalProperties: false,
               },
             },
-            required: ["secrets"],
-            additionalProperties: false,
-          },
+          }),
         },
-      }),
-    });
+      );
 
-    if (!gptResponse.ok) {
-      throw new Error(`ChatGPT error: ${gptResponse.status}`);
+      if (!gptResponse.ok) {
+        throw new Error(`ChatGPT error: ${gptResponse.status}`);
+      }
+
+      const gptData = await gptResponse.json();
+      secretsData = JSON.parse(gptData.choices[0].message.content);
     }
-
-    const gptData = await gptResponse.json();
-    const secretsData = JSON.parse(gptData.choices[0].message.content);
 
     const token = generateToken();
 

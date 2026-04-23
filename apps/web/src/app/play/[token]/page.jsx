@@ -288,7 +288,21 @@ export default function PlayPage({ params }) {
             <p className="text-purple-300 text-lg">{character.role}</p>
           </div>
 
+          {character.vibe && (
+            <p className="text-center text-fuchsia-200 text-sm mb-4">
+              {character.vibe}
+            </p>
+          )}
+
           <div className="space-y-3 mt-6">
+            {character.publicBio && (
+              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                <span className="text-purple-300 font-semibold">
+                  Public bio:{" "}
+                </span>
+                <span className="text-purple-100">{character.publicBio}</span>
+              </div>
+            )}
             <div>
               <span className="text-purple-300 font-semibold">
                 Personality:{" "}
@@ -309,8 +323,53 @@ export default function PlayPage({ params }) {
               </span>
               <span className="text-amber-100">{character.secret}</span>
             </div>
+            {character.willingToShare && (
+              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                <span className="text-cyan-300 font-semibold">
+                  You are willing to share:{" "}
+                </span>
+                <span className="text-cyan-100">
+                  {character.willingToShare}
+                </span>
+              </div>
+            )}
+            {character.roleplayNotes?.length > 0 && (
+              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                <div className="text-purple-300 font-semibold mb-2">
+                  Suggested behavior
+                </div>
+                <ul className="space-y-1 text-purple-100 text-sm">
+                  {character.roleplayNotes.map((note) => (
+                    <li key={note}>• {note}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {character.suspicionLevel && (
+              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                <span className="text-rose-300 font-semibold">
+                  How others may see you:{" "}
+                </span>
+                <span className="text-rose-100">
+                  {character.suspicionLevel}
+                </span>
+              </div>
+            )}
           </div>
         </div>
+
+        {character.isVictim && (
+          <div className="bg-slate-800/70 border border-slate-700 rounded-xl p-5 mb-6">
+            <p className="text-slate-100 font-semibold mb-2">
+              Theo is a pre-discovery role.
+            </p>
+            <p className="text-slate-300 text-sm leading-relaxed">
+              Once the body is discovered, your job is to observe, help the
+              atmosphere stay sharp, and only speak again if the host invites a
+              flashback moment.
+            </p>
+          </div>
+        )}
 
         {/* Killer Banner */}
         {isKiller && (
@@ -538,7 +597,7 @@ export default function PlayPage({ params }) {
         </div>
 
         {/* Voting Section */}
-        {votingOpen && (
+        {votingOpen && character.canVote !== false && (
           <div className="mb-8">
             <div className="bg-gradient-to-br from-amber-900/30 to-orange-900/20 backdrop-blur-sm border-2 border-amber-500/40 rounded-xl p-8">
               <div className="text-center mb-6">
@@ -608,6 +667,17 @@ export default function PlayPage({ params }) {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {votingOpen && character.canVote === false && (
+          <div className="mb-8 bg-slate-800/70 border border-slate-700 rounded-xl p-6 text-center">
+            <p className="text-slate-100 font-semibold mb-2">
+              Theo does not participate in the accusation vote.
+            </p>
+            <p className="text-slate-400 text-sm">
+              Observe the final judgment and let the surviving students decide.
+            </p>
           </div>
         )}
       </div>

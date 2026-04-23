@@ -1,4 +1,5 @@
 import sql from "@/app/api/utils/sql";
+import { resolveMysteryData } from "@/app/api/utils/resolveMysteryData";
 
 // Toggle voting open/closed
 export async function POST(request, { params }) {
@@ -35,7 +36,7 @@ export async function GET(request, { params }) {
     const { id } = params;
 
     const mysteryRows = await sql(
-      "SELECT voting_open, mystery_data FROM mysteries WHERE id = $1",
+      "SELECT voting_open, mystery_data, config FROM mysteries WHERE id = $1",
       [id],
     );
 
@@ -64,9 +65,21 @@ export async function GET(request, { params }) {
       voteCounts[vote.voted_for]++;
     }
 
+    const mysteryData = resolveMysteryData(
+      mysteryRows[0].mystery_data,
+      mysteryRows[0].config,
+    );
+
     return Response.json({
       success: true,
       votingOpen: mysteryRows[0].voting_open,
+      accusationTargets: (
+        mysteryData.accusationTargets || mysteryData.characters
+      ).map((character) => ({
+        name: character.name,
+        role: character.role,
+        isMurderer: character.isMurderer === true,
+      })),
       votes,
       voteCounts,
       totalVotes: votes.length,

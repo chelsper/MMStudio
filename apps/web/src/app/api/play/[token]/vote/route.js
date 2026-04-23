@@ -1,4 +1,5 @@
 import sql from "@/app/api/utils/sql";
+import { resolveMysteryData } from "@/app/api/utils/resolveMysteryData";
 
 // Cast a vote
 export async function POST(request, { params }) {
@@ -16,7 +17,7 @@ export async function POST(request, { params }) {
 
     // Get assignment and check mystery has voting open
     const rows = await sql(
-      `SELECT ca.mystery_id, ca.character_name, m.voting_open, m.mystery_data
+      `SELECT ca.mystery_id, ca.character_name, m.voting_open, m.mystery_data, m.config
        FROM character_assignments ca
        JOIN mysteries m ON m.id = ca.mystery_id
        WHERE ca.token = $1`,
@@ -39,8 +40,10 @@ export async function POST(request, { params }) {
       );
     }
 
-    // Verify votedFor is a valid character name
-    const validCharacter = row.mystery_data.characters.some(
+    const mysteryData = resolveMysteryData(row.mystery_data, row.config);
+    const validCharacter = (
+      mysteryData.accusationTargets || mysteryData.characters
+    ).some(
       (c) => c.name === votedFor,
     );
     if (!validCharacter) {
@@ -74,7 +77,7 @@ export async function GET(request, { params }) {
     const { token } = params;
 
     const rows = await sql(
-      `SELECT ca.mystery_id, m.voting_open, m.mystery_data
+      `SELECT ca.mystery_id, m.voting_open, m.mystery_data, m.config
        FROM character_assignments ca
        JOIN mysteries m ON m.id = ca.mystery_id
        WHERE ca.token = $1`,
@@ -96,11 +99,15 @@ export async function GET(request, { params }) {
       [row.mystery_id, token],
     );
 
+    const mysteryData = resolveMysteryData(row.mystery_data, row.config);
+
     return Response.json({
       success: true,
       votingOpen: row.voting_open,
       myVote: voteRows.length > 0 ? voteRows[0].voted_for : null,
-      characters: row.mystery_data.characters.map((c) => ({
+      characters: (
+        mysteryData.accusationTargets || mysteryData.characters
+      ).map((c) => ({
         name: c.name,
         role: c.role,
       })),

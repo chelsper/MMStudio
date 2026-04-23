@@ -1,5 +1,6 @@
 import sql from "@/app/api/utils/sql";
 import { auth } from "@/auth";
+import { createDespairAtBlackwoodAcademyInstance } from "@/data/privateMysteries";
 
 async function checkAdmin() {
   const session = await auth();
@@ -67,6 +68,37 @@ export async function POST(request) {
       ]);
       await sql("DELETE FROM mysteries WHERE id = $1", [mysteryId]);
       return Response.json({ success: true });
+    }
+
+    if (action === "create-private-template") {
+      const { templateSlug, includeBonusCharacter } = body;
+
+      if (templateSlug !== "despair-at-blackwood-academy") {
+        return Response.json(
+          { error: "Unknown private template" },
+          { status: 400 },
+        );
+      }
+
+      const templateInstance = createDespairAtBlackwoodAcademyInstance({
+        includeBonusCharacter: Boolean(includeBonusCharacter),
+        createdByEmail: admin.email || null,
+      });
+
+      await sql(
+        "INSERT INTO mysteries (id, mystery_data, config, user_email) VALUES ($1, $2, $3, $4)",
+        [
+          templateInstance.id,
+          JSON.stringify(templateInstance.mysteryData),
+          JSON.stringify(templateInstance.config),
+          admin.email || null,
+        ],
+      );
+
+      return Response.json({
+        success: true,
+        mysteryId: templateInstance.id,
+      });
     }
 
     return Response.json({ error: "Unknown action" }, { status: 400 });

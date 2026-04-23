@@ -37,7 +37,12 @@ export function MysteriesTable({ mysteries, onDelete }) {
                   {m.user_email || "—"}
                 </td>
                 <td className="py-3 pr-4 text-slate-300">
-                  {config?.setting || "—"}
+                  <div>{config?.setting || "—"}</div>
+                  {config?.visibility === "hidden" && (
+                    <div className="text-[10px] text-fuchsia-300 uppercase tracking-wide">
+                      private
+                    </div>
+                  )}
                 </td>
                 <td className="py-3 pr-4 text-slate-300">{m.player_count}</td>
                 <td className="py-3 pr-4 text-slate-400 text-xs">
